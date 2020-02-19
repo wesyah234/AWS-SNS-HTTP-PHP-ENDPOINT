@@ -8,14 +8,14 @@
 $logToFile = true;
 
 //Should you need to check that your messages are coming from the correct topicArn
-$restrictByTopic = true;
+$restrictByTopic = false;
 $allowedTopic = "arn:aws:sns:us-east-1:318514470594:WAYJ_NowPlaying_Test";
 
 //For security you can (should) validate the certificate, this does add an additional time demand on the system.
 //NOTE: This also checks the origin of the certificate to ensure messages are signed by the AWS SNS SERVICE.
 //Since the allowed topicArn is part of the validation data, this ensures that your request originated from
 //the service, not somewhere else, and is from the topic you think it is, not something spoofed.
-$verifyCertificate = true;
+$verifyCertificate = false;
 $sourceDomain = "sns.us-east-1.amazonaws.com";
  
 
@@ -28,19 +28,25 @@ $safeToProcess = true; //Are Security Criteria Set Above Met? Changed programmat
 
 if($logToFile){
 	////LOG TO FILE:
-	$dateString = date("Ymdhis");
-	$dateString = $dateString."_r.txt";
 
-	$myFile = $dateString;
-	$fh = fopen($myFile, 'w') or die("Log File Cannot Be Opened.");
+	$myFile = 'log.log';
+	$fh = fopen($myFile, 'a') or die("Log File Cannot Be Opened.");
+
+	fwrite($fh, "-----------got something---------------\n");
+	fwrite($fh, date('r')."\n");
 }
 
 
 //Get the raw post data from the request. This is the best-practice method as it does not rely on special php.ini directives
 //like $HTTP_RAW_POST_DATA. Amazon SNS sends a JSON object as part of the raw post body.
-$json = json_decode(file_get_contents("php://input"));
-
-
+//$json = json_decode(file_get_contents("php://input"));
+$json = file_get_contents("php://input");
+if ($logToFile) {
+	fwrite($fh, "rawdata START\n");
+	fwrite($fh, "$json\n");
+	fwrite($fh, "rawdata END\n");
+}
+$json = json_decode($json);
 //Check for Restrict By Topic
 if($restrictByTopic){
 	if($allowedTopic != $json->TopicArn){
@@ -138,11 +144,20 @@ if($safeToProcess){
 	
 	
 	//Handle a Notification Programmatically
-	if($json->Type == "Notification"){
-		//Do what you want with the data here.
-		//fwrite($fh, $json->Subject);
-		//fwrite($fh, $json->Message);
-	}
+	//if($json->Type == "Notification"){
+	//	//Do what you want with the data here.
+	//	fwrite($fh, "-----------received message---------------\n");
+	//	fwrite($fh, $json->Subject);
+	//	fwrite($fh, $json->Message);
+	//	fwrite($fh, "------------------------------------------\n");
+	//}
+//else {
+//
+//		fwrite($fh, "-----------received not a notification---------------\n");
+//		fwrite($fh, $rawdata);
+//		fwrite($fh, "------------------------------------------\n");
+//}
+
 }
 
 //Clean Up For Debugging.
